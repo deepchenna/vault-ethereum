@@ -22,6 +22,7 @@ import (
 	"math/big"
 	"regexp"
 	"strconv"
+	"encoding/hex"
 
 	ethereum "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -163,7 +164,7 @@ Send ETH from an account.
 				},
 				"data": &framework.FieldSchema{
 					Type:        framework.TypeString,
-					Description: "The data to sign.",
+					Description: "The Hex data to sign.",
 				},
 				"amount": &framework.FieldSchema{
 					Type:        framework.TypeString,
@@ -600,6 +601,7 @@ func (b *EthereumBackend) pathSignTx(ctx context.Context, req *logical.Request, 
 
 	name := data.Get("name").(string)
 	dataToSign := data.Get("data").(string)
+	decoded, err := hex.DecodeString(dataToSign)
 	account, err := b.readAccount(ctx, req, name)
 	if err != nil {
 		return nil, fmt.Errorf("error reading account")
@@ -666,7 +668,7 @@ func (b *EthereumBackend) pathSignTx(ctx context.Context, req *logical.Request, 
 	}
 
 	toAddress := common.HexToAddress(data.Get("address_to").(string))
-	tx := types.NewTransaction(nonce, toAddress, amount, gasLimit, gasPrice, []byte(dataToSign))
+	tx := types.NewTransaction(nonce, toAddress, amount, gasLimit, gasPrice, decoded)
 	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), privateKey)
 	if err != nil {
 		return nil, err
